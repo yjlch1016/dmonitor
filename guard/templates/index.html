@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="en-us">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0">
+
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <meta name="robots" content="NONE,NOARCHIVE"/>
+    <title>pyecharts图表 | 轻量级生产环境接口监控平台</title>
+
+    <link href="/static/xadmin/vendor/bootstrap/css/bootstrap.css" type="text/css" media="screen" rel="stylesheet">
+
+    <link rel="stylesheet" type="text/css" id="site-theme" href="https://bootswatch.com/3/cosmo/bootstrap.min.css"/>
+
+    <link href="/static/xadmin/vendor/font-awesome/css/font-awesome.min.css" type="text/css" media="screen"
+          rel="stylesheet">
+    <link href="/static/xadmin/css/xadmin.main.css" type="text/css" media="screen" rel="stylesheet">
+    <link href="/static/xadmin/css/xadmin.plugins.css" type="text/css" media="screen" rel="stylesheet">
+    <link href="/static/xadmin/css/xadmin.responsive.css" type="text/css" media="screen" rel="stylesheet">
+    <link href="/static/xadmin/vendor/select2/select2.css" type="text/css" media="screen" rel="stylesheet">
+    <link href="/static/xadmin/css/xadmin.widget.editable.css" type="text/css" media="screen" rel="stylesheet">
+    <link href="/static/xadmin/css/xadmin.form.css" type="text/css" media="screen" rel="stylesheet">
+    <link href="/static/xadmin/vendor/bootstrap-datepicker/css/datepicker.css" type="text/css" media="screen"
+          rel="stylesheet">
+    <link href="/static/xadmin/css/xadmin.plugins.css" type="text/css" media="screen" rel="stylesheet">
+    <link href="/static/xadmin/vendor/selectize/selectize.css" type="text/css" media="screen" rel="stylesheet">
+    <link href="/static/xadmin/vendor/selectize/selectize.bootstrap3.css" type="text/css" media="screen"
+          rel="stylesheet">
+
+    <style type="text/css">
+        .btn-toolbar {
+            margin-top: 0;
+        }
+
+        #content-block.full-content {
+            margin-left: 0;
+        }
+    </style>
+
+    <script type="text/javascript" src="/static/xadmin/vendor/jquery/jquery.min.js"></script>
+    <script type="text/javascript" src="https://assets.pyecharts.org/assets/echarts.min.js"></script>
+    <!--
+    <script type="text/javascript" src="http://www.monitor.com/static/pyecharts-assets/assets/echarts.min.js"></script>
+    -->
+
+    <script type="text/javascript">
+        window.__admin_media_prefix__ = "/static/xadmin/";
+        window.__admin_path_prefix__ = "/admin/";
+        window.__admin_language_code__ = "";
+    </script>
+    <script type="text/javascript" src="/admin/jsi18n/"></script>
+
+    <style type="text/css">table {
+        table-layout: inherit;
+    }
+
+    td {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }</style>
+<body class="change-list">
+
+<!-- Header -->
+
+<style>
+    .tab {
+        overflow: hidden;
+        border: 1px solid #ccc;
+        background-color: #f1f1f1;
+    }
+
+    .tab button {
+        background-color: inherit;
+        float: left;
+        border: none;
+        outline: none;
+        cursor: pointer;
+        padding: 12px 16px;
+        transition: 0.3s;
+    }
+
+    .tab button:hover {
+        background-color: #ddd;
+    }
+
+    .tab button.active {
+        background-color: #ccc;
+    }
+
+    .chart-container {
+        display: none;
+        padding: 6px 12px;
+        border-top: none;
+    }
+</style>
+
+<div id="top-nav" class="navbar navbar-xs navbar-inverse navbar-fixed-top">
+    <div class="navbar-header">
+        <a class="navbar-brand" href="#">轻量级生产环境接口监控平台</a>
+    </div>
+    <div class="navbar-collapse collapse">
+        <ul class="nav navbar-nav pull-right">
+
+
+            <li class="dropdown g-add">
+                <a class="dropdown-toggle" role="button" data-toggle="dropdown" href="#">
+                    <i class="fa fa-plus"></i> <span class="hide-sm">增加 <i class="caret"></i></span></a>
+                <ul id="g-add-menu" class="dropdown-menu" role="menu">
+
+                    <li><a href="/admin/xadmin/userwidget/add/"><i class="fa fa-plus"></i> 增加 用户小组件</a></li>
+
+                    <li><a href="/admin/guard/microservice/add/"><i class="fa fa-plus"></i> 增加 微服务列表</a></li>
+
+                    <li><a href="/admin/guard/case/add/"><i class="fa fa-plus"></i> 增加 用例列表</a></li>
+
+                    <li><a href="/admin/guard/step/add/"><i class="fa fa-plus"></i> 增加 步骤列表</a></li>
+
+                    <li><a href="/admin/guard/runningresults/add/"><i class="fa fa-plus"></i> 增加 运行结果列表</a></li>
+
+                    <li><a href="/admin/guard/environmentconfiguration/add/"><i class="fa fa-plus"></i> 增加 环境配置列表</a>
+                    </li>
+
+                    <li><a href="/admin/django_celery_beat/intervalschedule/add/"><i class="fa fa-plus"></i> 增加 Interval</a>
+                    </li>
+
+                    <li><a href="/admin/django_celery_beat/crontabschedule/add/"><i class="fa fa-plus"></i> 增加
+                        Crontab</a></li>
+
+                    <li><a href="/admin/django_celery_beat/periodictask/add/"><i class="fa fa-plus"></i> 增加 Periodic
+                        task</a></li>
+
+                    <li><a href="/admin/django_celery_results/taskresult/add/"><i class="fa fa-plus"></i> 增加 Task result</a>
+                    </li>
+
+                    <li><a href="/admin/xadmin/bookmark/add/"><i class="fa fa-plus"></i> 增加 书签</a></li>
+
+                    <li><a href="/admin/auth/group/add/"><i class="fa fa-plus"></i> 增加 组</a></li>
+
+                    <li><a href="/admin/auth/user/add/"><i class="fa fa-plus"></i> 增加 用户</a></li>
+
+                    <li><a href="/admin/auth/permission/add/"><i class="fa fa-plus"></i> 增加 权限</a></li>
+
+                    <li><a href="/admin/xadmin/usersettings/add/"><i class="fa fa-plus"></i> 增加 用户设置</a></li>
+
+                    <li><a href="/admin/xadmin/log/add/"><i class="fa fa-plus"></i> 增加 日志记录</a></li>
+
+                </ul>
+            </li>
+
+
+            <li class="dropdown g-theme">
+                <a class="dropdown-toggle" role="button" data-toggle="dropdown" href="#">
+                    <i class="fa fa-magic"></i> <span class="hide-sm">主题 <i class="caret"></i></span></a>
+                <ul id="g-theme-menu" class="dropdown-menu" role="menu">
+
+                    <li><a data-css-href="/static/xadmin/css/themes/bootstrap-xadmin.css">默认</a></li>
+
+                    <li><a data-css-href="/static/xadmin/css/themes/bootstrap-theme.css">Bootstrap2</a></li>
+
+                    <li><a data-css-href="https://bootswatch.com/3/cerulean/bootstrap.min.css">Cerulean</a></li>
+
+                    <li class="active"><a data-css-href="https://bootswatch.com/3/cosmo/bootstrap.min.css">Cosmo</a>
+                    </li>
+
+                    <li><a data-css-href="https://bootswatch.com/3/cyborg/bootstrap.min.css">Cyborg</a></li>
+
+                    <li><a data-css-href="https://bootswatch.com/3/darkly/bootstrap.min.css">Darkly</a></li>
+
+                    <li><a data-css-href="https://bootswatch.com/3/flatly/bootstrap.min.css">Flatly</a></li>
+
+                    <li><a data-css-href="https://bootswatch.com/3/journal/bootstrap.min.css">Journal</a></li>
+
+                    <li><a data-css-href="https://bootswatch.com/3/lumen/bootstrap.min.css">Lumen</a></li>
+
+                    <li><a data-css-href="https://bootswatch.com/3/paper/bootstrap.min.css">Paper</a></li>
+
+                    <li><a data-css-href="https://bootswatch.com/3/readable/bootstrap.min.css">Readable</a></li>
+
+                    <li><a data-css-href="https://bootswatch.com/3/sandstone/bootstrap.min.css">Sandstone</a></li>
+
+                    <li><a data-css-href="https://bootswatch.com/3/simplex/bootstrap.min.css">Simplex</a></li>
+
+                    <li><a data-css-href="https://bootswatch.com/3/slate/bootstrap.min.css">Slate</a></li>
+
+                    <li><a data-css-href="https://bootswatch.com/3/spacelab/bootstrap.min.css">Spacelab</a></li>
+
+                    <li><a data-css-href="https://bootswatch.com/3/superhero/bootstrap.min.css">Superhero</a></li>
+
+                    <li><a data-css-href="https://bootswatch.com/3/united/bootstrap.min.css">United</a></li>
+
+                    <li><a data-css-href="https://bootswatch.com/3/yeti/bootstrap.min.css">Yeti</a></li>
+
+                </ul>
+            </li>
+
+            <li class="dropdown">
+                <a class="dropdown-toggle" role="button" data-toggle="dropdown" href="#">
+                    <strong>欢迎， admin</strong> <span class="caret"></span></a>
+                <ul id="g-account-menu" class="dropdown-menu" role="menu">
+                    <li><a href="/admin/account/password/"><i class="fa fa-key"></i> 更改密码</a></li>
+                </ul>
+            </li>
+
+            <li><a href="/admin/logout/"><i class="show-sm fa fa-sign-out"></i><span class="hide-sm">注销</span></a></li>
+        </ul>
+
+
+        <form method="get" class="top-search-form navbar-form navbar-left" id="g-search">
+            <div class="input-group">
+                <input name="_q_" class="form-control" type="text">
+                <span class="input-group-btn">
+      <button class="btn btn-default dropdown-toggle" data-toggle="dropdown">
+        <i class="fa fa-search"></i> 搜索 <span class="caret"></span>
+      </button>
+      <ul class="dropdown-menu">
+
+          <li><a data-action="/admin/guard/microservice/"><i class="fa fa-search"></i> 搜索微服务列表</a></li>
+
+          <li><a data-action="/admin/guard/case/"><i class="fa fa-search"></i> 搜索用例列表</a></li>
+
+          <li><a data-action="/admin/guard/step/"><i class="fa fa-search"></i> 搜索步骤列表</a></li>
+
+          <li><a data-action="/admin/guard/runningresults/"><i class="fa fa-search"></i> 搜索运行结果列表</a></li>
+
+          <li><a data-action="/admin/guard/environmentconfiguration/"><i class="fa fa-search"></i> 搜索环境配置列表</a></li>
+
+      </ul>
+    </span>
+            </div>
+        </form>
+
+
+    </div>
+</div>
+
+<div id="body-content" class="clearfix row">
+    <div id="left-side" class="col-sm-1 col-md-2">
+
+
+        <div class="panel-group hide-sm nav-sitemenu col-md-2" id="nav-accordion">
+
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    <h6 class="panel-title">
+                        <span class="badge badge-info">1</span>
+                        <a class="accordion-toggle" data-toggle="collapse" data-parent="#nav-accordion"
+                           href="#nav-panel-1">
+
+                            <i class="fa-fw fa fa-bar-chart-o"></i>
+
+                            监控管理
+
+                        </a>
+                    </h6>
+                </div>
+                <div id="nav-panel-1" class="list-group panel-collapse collapse">
+
+                    <a href="http://www.monitor.com/grafana/" class="list-group-item">
+                        <i class="fa-fw fa fa-star"></i>
+                        grafana图表</span>
+                    </a>
+
+                </div>
+            </div>
+
+            <div class="panel panel-info">
+                <div class="panel-heading">
+                    <h6 class="panel-title">
+                        <span class="badge badge-info">5</span>
+                        <a class="accordion-toggle" data-toggle="collapse" data-parent="#nav-accordion"
+                           href="#nav-panel-2">
+
+                            <i class="fa-fw fa fa-github-alt"></i>
+
+                            用例列表
+
+                        </a>
+                    </h6>
+                </div>
+                <div id="nav-panel-2" class="list-group panel-collapse collapse in">
+
+                    <a href="/admin/guard/microservice/" class="list-group-item">
+                        <i class="fa-fw fa fa-html5"></i>
+                        微服务列表</span>
+                    </a>
+
+                    <a href="/admin/guard/case/" class="list-group-item active">
+                        <i class="fa-fw fa fa-css3"></i>
+                        用例列表</span>
+                    </a>
+
+                    <a href="/admin/guard/step/" class="list-group-item">
+                        <i class="fa-fw fa fa-anchor"></i>
+                        步骤列表</span>
+                    </a>
+
+                    <a href="/admin/guard/runningresults/" class="list-group-item">
+                        <i class="fa-fw fa fa-youtube"></i>
+                        运行结果列表</span>
+                    </a>
+
+                    <a href="/admin/guard/environmentconfiguration/" class="list-group-item">
+                        <i class="fa-fw fa fa-coffee"></i>
+                        环境配置列表</span>
+                    </a>
+
+                </div>
+            </div>
+
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    <h6 class="panel-title">
+                        <span class="badge badge-info">4</span>
+                        <a class="accordion-toggle" data-toggle="collapse" data-parent="#nav-accordion"
+                           href="#nav-panel-3">
+
+                            <i class="fa-fw fa fa-cloud"></i>
+
+                            任务队列
+
+                        </a>
+                    </h6>
+                </div>
+                <div id="nav-panel-3" class="list-group panel-collapse collapse">
+
+                    <a href="/admin/django_celery_beat/intervalschedule/" class="list-group-item">
+                        <i class="fa-fw fa fa-backward"></i>
+                        间隔时间列表</span>
+                    </a>
+
+                    <a href="/admin/django_celery_beat/crontabschedule/" class="list-group-item">
+                        <i class="fa-fw fa fa-forward"></i>
+                        定时时间列表</span>
+                    </a>
+
+                    <a href="/admin/django_celery_beat/periodictask/" class="list-group-item">
+                        <i class="fa-fw fa fa-play-circle"></i>
+                        任务设置列表</span>
+                    </a>
+
+                    <a href="/admin/django_celery_results/taskresult/" class="list-group-item">
+                        <i class="fa-fw fa fa-arrows-alt"></i>
+                        任务结果列表</span>
+                    </a>
+
+                </div>
+            </div>
+
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    <h6 class="panel-title">
+                        <span class="badge badge-info">4</span>
+                        <a class="accordion-toggle" data-toggle="collapse" data-parent="#nav-accordion"
+                           href="#nav-panel-4">
+
+                            <i class="fa-fw fa fa-wechat"></i>
+
+                            后台管理
+
+                        </a>
+                    </h6>
+                </div>
+                <div id="nav-panel-4" class="list-group panel-collapse collapse">
+
+                    <a href="/admin/auth/group/" class="list-group-item">
+                        <i class="fa-fw fa fa-sun-o"></i>
+                        组</span>
+                    </a>
+
+                    <a href="/admin/auth/user/" class="list-group-item">
+                        <i class="fa-fw fa fa-moon-o"></i>
+                        用户</span>
+                    </a>
+
+                    <a href="/admin/auth/permission/" class="list-group-item">
+                        <i class="fa-fw fa fa-weibo"></i>
+                        权限</span>
+                    </a>
+
+                    <a href="/admin/xadmin/log/" class="list-group-item">
+                        <i class="fa-fw fa fa-renren"></i>
+                        日志记录</span>
+                    </a>
+
+                </div>
+            </div>
+
+        </div>
+
+
+        <ul class="well nav nav-list nav-sitemenu show-sm">
+            <li class="app_menu">
+                <a href="/admin/"><i class="icon fa-fw fa fa-home"></i></a>
+                <hr/>
+            </li>
+
+            <li class="app_menu dropdown-submenu ">
+                <a href="#" class="section">
+                    <i class="icon fa-fw fa fa-bar-chart-o"></i>
+
+                </a>
+                <hr/>
+                <ul class="dropdown-menu">
+
+                    <li>
+                        <a href="http://www.monitor.com/grafana/">
+                            <i class="fa-fw fa fa-star"></i>
+                            grafana图表</span></a>
+                    </li>
+
+                </ul>
+            </li>
+
+            <li class="app_menu dropdown-submenu  active">
+                <a href="#" class="section">
+                    <i class="icon fa-fw fa fa-github-alt"></i>
+
+                </a>
+                <hr/>
+                <ul class="dropdown-menu">
+
+                    <li>
+                        <a href="/admin/guard/microservice/">
+                            <i class="fa-fw fa fa-html5"></i>
+                            微服务列表</span></a>
+                    </li>
+
+                    <li class="active">
+                        <a href="/admin/guard/case/">
+                            <i class="fa-fw fa fa-css3"></i>
+                            用例列表</span></a>
+                    </li>
+
+                    <li>
+                        <a href="/admin/guard/step/">
+                            <i class="fa-fw fa fa-anchor"></i>
+                            步骤列表</span></a>
+                    </li>
+
+                    <li>
+                        <a href="/admin/guard/runningresults/">
+                            <i class="fa-fw fa fa-youtube"></i>
+                            运行结果列表</span></a>
+                    </li>
+
+                    <li>
+                        <a href="/admin/guard/environmentconfiguration/">
+                            <i class="fa-fw fa fa-coffee"></i>
+                            环境配置列表</span></a>
+                    </li>
+
+                </ul>
+            </li>
+
+            <li class="app_menu dropdown-submenu ">
+                <a href="#" class="section">
+                    <i class="icon fa-fw fa fa-cloud"></i>
+
+                </a>
+                <hr/>
+                <ul class="dropdown-menu">
+
+                    <li>
+                        <a href="/admin/django_celery_beat/intervalschedule/">
+                            <i class="fa-fw fa fa-backward"></i>
+                            间隔时间列表</span></a>
+                    </li>
+
+                    <li>
+                        <a href="/admin/django_celery_beat/crontabschedule/">
+                            <i class="fa-fw fa fa-forward"></i>
+                            定时时间列表</span></a>
+                    </li>
+
+                    <li>
+                        <a href="/admin/django_celery_beat/periodictask/">
+                            <i class="fa-fw fa fa-play-circle"></i>
+                            任务设置列表</span></a>
+                    </li>
+
+                    <li>
+                        <a href="/admin/django_celery_results/taskresult/">
+                            <i class="fa-fw fa fa-arrows-alt"></i>
+                            任务结果列表</span></a>
+                    </li>
+
+                </ul>
+            </li>
+
+            <li class="app_menu dropdown-submenu ">
+                <a href="#" class="section">
+                    <i class="icon fa-fw fa fa-wechat"></i>
+
+                </a>
+                <hr/>
+                <ul class="dropdown-menu">
+
+                    <li>
+                        <a href="/admin/auth/group/">
+                            <i class="fa-fw fa fa-sun-o"></i>
+                            组</span></a>
+                    </li>
+
+                    <li>
+                        <a href="/admin/auth/user/">
+                            <i class="fa-fw fa fa-moon-o"></i>
+                            用户</span></a>
+                    </li>
+
+                    <li>
+                        <a href="/admin/auth/permission/">
+                            <i class="fa-fw fa fa-weibo"></i>
+                            权限</span></a>
+                    </li>
+
+                    <li>
+                        <a href="/admin/xadmin/log/">
+                            <i class="fa-fw fa fa-renren"></i>
+                            日志记录</span></a>
+                    </li>
+
+                </ul>
+            </li>
+
+        </ul>
+
+    </div>
+
+    <div id="content-block" class="col-sm-11 col-md-10">
+
+        <ul class="breadcrumb">
+
+
+            <li>
+                <a href="/admin/">首页</a>
+            </li>
+
+            <li>
+                pyecharts图表
+            </li>
+
+        </ul>
+
+
+        <div class="tab">
+            <button class="tablinks" onclick="showChart(event, 'line')">折线图</button>
+            <button class="tablinks" onclick="showChart(event, 'bar')">柱状图</button>
+            <button class="tablinks" onclick="showChart(event, 'effect_scatter')">涟漪散点图</button>
+        </div>
+
+
+        <div class="box">
+            <div id="line" class="chart-container" style="width:900px; height:500px;"></div>
+            <div id="bar" class="chart-container" style="width:900px; height:500px;"></div>
+            <div id="effect_scatter" class="chart-container" style="width:900px; height:500px;"></div>
+        </div>
+
+    </div>
+</div>
+
+
+<div id="footer">
+    <hr/>
+    <footer class="text-center">
+        <p>&copy; 测试部门</p>
+    </footer>
+</div>
+
+<script>
+    (function () {
+        containers = document.getElementsByClassName("chart-container");
+        if (containers.length > 0) {
+            containers[0].style.display = "block";
+        }
+    })()
+
+    function showChart(evt, chartID) {
+        let containers = document.getElementsByClassName("chart-container");
+        for (let i = 0; i < containers.length; i++) {
+            containers[i].style.display = "none";
+        }
+
+        let tablinks = document.getElementsByClassName("tablinks");
+        for (let i = 0; i < tablinks.length; i++) {
+            tablinks[i].className = "tablinks";
+        }
+
+        document.getElementById(chartID).style.display = "block";
+        evt.currentTarget.className += " active";
+    }
+</script>
+
+<script>
+    var chart_line = echarts.init(document.getElementById('line'), 'white', {renderer: 'canvas'});
+
+    $(
+        function () {
+            fetchDataLine(chart_line);
+        }
+    );
+
+    function fetchDataLine() {
+        $.ajax({
+            type: "GET",
+            url: "/pyecharts/line/",
+            dataType: 'json',
+            success: function (result) {
+                chart_line.setOption(result.data);
+            }
+        });
+    }
+</script>
+
+<script>
+    var chart_bar = echarts.init(document.getElementById('bar'), 'white', {renderer: 'canvas'});
+
+    $(
+        function () {
+            fetchDataBar(chart_bar);
+        }
+    );
+
+    function fetchDataBar() {
+        $.ajax({
+            type: "GET",
+            url: "/pyecharts/bar/",
+            dataType: 'json',
+            success: function (result) {
+                chart_bar.setOption(result.data);
+            }
+        });
+    }
+</script>
+
+<script>
+    var chart_effect_scatter = echarts.init(document.getElementById('effect_scatter'), 'white', {renderer: 'canvas'});
+
+    $(
+        function () {
+            fetchDataEffectScatter(chart_effect_scatter);
+        }
+    );
+
+    function fetchDataEffectScatter() {
+        $.ajax({
+            type: "GET",
+            url: "/pyecharts/effect_scatter/",
+            dataType: 'json',
+            success: function (result) {
+                chart_effect_scatter.setOption(result.data);
+            }
+        });
+    }
+</script>
+
+
+<script type="text/javascript" src="/static/xadmin/vendor/jquery-ui/jquery.ui.core.min.js"></script>
+<script type="text/javascript" src="/static/xadmin/vendor/jquery-ui/jquery.ui.widget.min.js"></script>
+<script type="text/javascript" src="/static/xadmin/vendor/jquery-ui/jquery.ui.mouse.min.js"></script>
+<script type="text/javascript" src="/static/xadmin/vendor/jquery-ui/jquery.ui.sortable.min.js"></script>
+<script type="text/javascript" src="/static/xadmin/vendor/bootstrap/js/bootstrap.min.js"></script>
+<script type="text/javascript" src="/static/xadmin/js/xadmin.main.js"></script>
+<script type="text/javascript" src="/static/xadmin/js/xadmin.responsive.js"></script>
+<script type="text/javascript" src="/static/xadmin/vendor/jquery-ui/jquery.ui.effect.min.js"></script>
+<script type="text/javascript" src="/static/xadmin/vendor/selectize/selectize.min.js"></script>
+<script type="text/javascript" src="/static/xadmin/js/xadmin.plugin.quick-form.js"></script>
+<script type="text/javascript" src="/static/xadmin/js/xadmin.plugin.editable.js"></script>
+<script type="text/javascript" src="/static/xadmin/js/xadmin.plugin.details.js"></script>
+<script type="text/javascript" src="/static/xadmin/js/xadmin.plugin.bookmark.js"></script>
+<script type="text/javascript" src="/static/xadmin/vendor/bootstrap-datepicker/js/bootstrap-datepicker.js"></script>
+<script type="text/javascript" src="/static/xadmin/js/xadmin.plugin.filters.js"></script>
+<script type="text/javascript" src="/static/xadmin/js/xadmin.plugin.actions.js"></script>
+<script type="text/javascript" src="/static/xadmin/js/xadmin.page.list.js"></script>
+<script type="text/javascript" src="/static/xadmin/js/xadmin.plugin.themes.js"></script>
+<script type="text/javascript" src="/static/xadmin/vendor/select2/select2.min.js"></script>
+<script type="text/javascript" src="/static/xadmin/js/xadmin.widget.datetime.js"></script>
+<script type="text/javascript" src="/static/xadmin/js/xadmin.page.form.js"></script>
+<script type="text/javascript" src="/static/xadmin/vendor/select2/select2_locale_zh-hans.js"></script>
+<script type="text/javascript" src="/static/xadmin/js/xadmin.widget.select.js"></script>
+
+
+</body>
+</html>
