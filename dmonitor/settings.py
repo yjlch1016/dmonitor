@@ -54,6 +54,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    'django.middleware.cache.UpdateCacheMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -61,6 +62,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'django.middleware.cache.FetchFromCacheMiddleware',
 ]
 
 ROOT_URLCONF = 'dmonitor.urls'
@@ -211,3 +213,21 @@ EMAIL_HOST_USER = 'yyy@www.zzz.com'
 EMAIL_HOST_PASSWORD = ''
 DEFAULT_FROM_EMAIL = 'ccc@www.ddd.com'
 # SMTP服务配置
+
+
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": "redis://localhost:6379/1",
+        "TIMEOUT": 180,
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+            "CONNECTION_POOL_KWARGS": {"max_connections": 100},
+            "SOCKET_CONNECT_TIMEOUT": 5,
+            "SOCKET_TIMEOUT": 5,
+            "COMPRESSOR": "django_redis.compressors.zlib.ZlibCompressor",
+            "IGNORE_EXCEPTIONS": True,
+        }
+    }
+}
+# django-redis配置

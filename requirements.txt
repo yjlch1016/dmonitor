@@ -1,4 +1,5 @@
 djangorestframework==3.10.2
+django-redis==4.12.1
 requests==2.23.0
 demjson==2.2.4
 celery==4.3.0
