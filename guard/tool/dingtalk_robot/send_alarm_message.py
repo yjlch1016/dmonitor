@@ -11,8 +11,14 @@ import requests
 from guard.tool.dingtalk_robot.dingtalk_signature import get_dingtalk_signature
 
 
-def send_dingtalk_alarm(alarm_message):
-    # 发送钉钉报警的方法，参数为报警信息
+def send_dingtalk_alarm(alarm_message, dingtalk_webhook, secret):
+    """
+    发送钉钉报警的方法
+    :param alarm_message: 第一个参数为报警信息
+    :param dingtalk_webhook: 第二个参数为钉钉机器人Webhook
+    :param secret: 第三个参数为密钥
+    :return:
+    """
 
     headers = {
         "Content-Type": "application/json;charset=UTF-8"
@@ -31,11 +37,9 @@ def send_dingtalk_alarm(alarm_message):
     }
     # 请求体
 
-    dingtalk_webhook = "https://oapi.dingtalk.com/robot/send?access_token=123456789"
-    # 钉钉机器人Webhook
     timestamp = str(round(time.time() * 1000))
     # 时间戳
-    sign = get_dingtalk_signature()
+    sign = get_dingtalk_signature(secret)
     # 签名
 
     url = dingtalk_webhook + "&timestamp=" + timestamp + "&sign=" + sign

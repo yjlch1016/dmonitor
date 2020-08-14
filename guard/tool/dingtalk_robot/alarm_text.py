@@ -1,7 +1,4 @@
-monitoring_platform = "http://www.monitor.com/admin/"
-
-
-# 监控平台地址
+from dmonitor.settings import MONITOR_PLATFORM
 
 
 def response_result_alarm(case_name,
@@ -13,7 +10,7 @@ def response_result_alarm(case_name,
                           query_string):
     # 响应结果报警文本
 
-    text = "生产环境钉钉报警：\n{}\n{}\n请求地址：{}\n请求方式：{}\n请求体：{}\n请求头：{}\n请求参数：{}\n预期的响应结果与实际的响应结果断言失败！！！\n请访问：{}\n" \
+    text = "钉钉报警：\n用例名称：{}\n步骤名称：{}\n请求地址：{}\n请求方式：{}\n请求体：{}\n请求头：{}\n请求参数：{}\n预期的响应结果与实际的响应结果断言失败！！！\n请访问：{}\n" \
         .format(case_name,
                 step_name,
                 url,
@@ -21,7 +18,7 @@ def response_result_alarm(case_name,
                 body,
                 headers,
                 query_string,
-                monitoring_platform)
+                MONITOR_PLATFORM)
     return text
 
 
@@ -36,7 +33,7 @@ def response_time_alarm(case_name,
                         expected_time):
     # 响应时间报警文本
 
-    text = "生产环境钉钉报警：\n{}\n{}\n请求地址：{}\n请求方式：{}\n请求体：{}\n请求头：{}\n请求参数：{}\n实际的响应时间大于预期的响应时间：{}秒>{}秒\n请访问：{}\n" \
+    text = "钉钉报警：\n用例名称：{}\n步骤名称：{}\n请求地址：{}\n请求方式：{}\n请求体：{}\n请求头：{}\n请求参数：{}\n实际的响应时间大于预期的响应时间：{}秒>{}秒\n请访问：{}\n" \
         .format(case_name,
                 step_name,
                 url,
@@ -46,7 +43,7 @@ def response_time_alarm(case_name,
                 query_string,
                 actual_time,
                 expected_time,
-                monitoring_platform)
+                MONITOR_PLATFORM)
     return text
 
 
@@ -61,7 +58,7 @@ def response_code_alarm(case_name,
                         actual_code):
     # 响应代码报警文本
 
-    text = "生产环境钉钉报警：\n{}\n{}\n请求地址：{}\n请求方式：{}\n请求体：{}\n请求头：{}\n请求参数：{}\n预期的响应代码与实际的响应代码不相等：{}!={}\n请访问：{}\n" \
+    text = "钉钉报警：\n用例名称：{}\n步骤名称：{}\n请求地址：{}\n请求方式：{}\n请求体：{}\n请求头：{}\n请求参数：{}\n预期的响应代码与实际的响应代码不相等：{}!={}\n请访问：{}\n" \
         .format(case_name,
                 step_name,
                 url,
@@ -71,7 +68,7 @@ def response_code_alarm(case_name,
                 query_string,
                 expected_code,
                 actual_code,
-                monitoring_platform)
+                MONITOR_PLATFORM)
     return text
 
 
@@ -85,7 +82,7 @@ def http_request_exception_alarm(case_name,
                                  e):
     # http请求异常报警文本
 
-    text = "生产环境钉钉报警：\n{}\n{}\n请求地址：{}\n请求方式：{}\n请求体：{}\n请求头：{}\n请求参数：{}\n异常信息：{}\n" \
+    text = "钉钉报警：\n用例名称：{}\n步骤名称：{}\n请求地址：{}\n请求方式：{}\n请求体：{}\n请求头：{}\n请求参数：{}\n异常信息：{}\n请访问：{}\n" \
         .format(case_name,
                 step_name,
                 url,
@@ -93,5 +90,6 @@ def http_request_exception_alarm(case_name,
                 body,
                 headers,
                 query_string,
-                e)
+                e,
+                MONITOR_PLATFORM)
     return text

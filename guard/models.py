@@ -29,6 +29,11 @@ class Microservice(models.Model):
         max_length=50, verbose_name="微服务名称",
         help_text="请输入微服务名称", db_index=True)
     # 微服务名称，并创建索引，必填
+    swagger_address = models.CharField(
+        max_length=255, verbose_name="swagger地址",
+        help_text="请输入swagger地址", default="",
+        blank=True, null=True, )
+    # swagger地址
     microservice_on_off = models.CharField(
         choices=on_off_choice, max_length=11,
         blank=True, null=True, help_text="请选择开关",
@@ -130,6 +135,12 @@ class Case(models.Model):
 class Step(models.Model):
     # 步骤表
 
+    step_on_off_choice = (
+        ("开", "开"),
+        ("关", "关"),
+    )
+    # 步骤开关枚举
+
     mode_choice = (
         ("GET", "GET"),
         ("POST", "POST"),
@@ -150,6 +161,11 @@ class Step(models.Model):
         max_length=50, verbose_name="步骤名称",
         help_text="请输入步骤名称", db_index=True)
     # 步骤名称，并创建索引，必填
+    step_on_off = models.CharField(
+        choices=step_on_off_choice, max_length=11,
+        blank=True, null=True, help_text="请选择开关",
+        verbose_name="步骤开关", default="开")
+    # 步骤开关
     request_mode = models.CharField(
         choices=mode_choice, max_length=11,
         verbose_name="请求方式", default="GET",
@@ -253,8 +269,8 @@ class RunningResults(models.Model):
         return self.pass_status
 
     def actual_result_ellipsis(self):
-        if len(str(self.actual_result)) > 50:
-            return "{}......".format(str(self.actual_result[0:50]))
+        if len(str(self.actual_result)) > 20:
+            return "{}......".format(str(self.actual_result[0:20]))
         else:
             return self.actual_result
 
@@ -274,6 +290,18 @@ class EnvironmentConfiguration(models.Model):
         max_length=255, verbose_name="域名",
         help_text="请输入域名", db_index=True)
     # 域名，并创建索引，必填
+    webhook = models.CharField(
+        max_length=255, verbose_name="钉钉Webhook",
+        help_text="请输入钉钉Webhook", db_index=True)
+    # 钉钉机器人Webhook，并创建索引，必填
+    secret = models.CharField(
+        max_length=255, verbose_name="密钥",
+        help_text="请输入密钥", db_index=True)
+    # 密钥，并创建索引，必填
+    recipient_email = models.CharField(
+        max_length=255, verbose_name="收件人邮箱",
+        help_text="请输入收件人邮箱", db_index=True)
+    # 收件人邮箱，并创建索引，必填
     create_time = models.DateTimeField(
         auto_now_add=True, blank=True, null=True, verbose_name="创建时间")
     # 创建时间

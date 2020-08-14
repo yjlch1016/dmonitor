@@ -17,12 +17,40 @@ import xadmin
 from django.conf import settings
 from django.conf.urls import url
 from django.conf.urls.static import static
-from django.urls import path
+from django.urls import path, include
+from drf_yasg import openapi
+from drf_yasg.views import get_schema_view
+from rest_framework import routers, permissions
 
 from guard import views, pyecharts_views
 
+router = routers.DefaultRouter()
+router.register('microservice', views.MicroserviceViewSet)
+router.register('case', views.CaseViewSet)
+router.register('step', views.StepViewSet)
+router.register('environment_configuration', views.EnvironmentConfigurationViewSet)
+
+schema_view = get_schema_view(
+    openapi.Info(
+        title="轻量级生产环境接口监控平台API",
+        default_version='V1.0.0',
+        description="轻量级生产环境接口监控平台接口文档",
+    ),
+    public=True,
+    permission_classes=(permissions.AllowAny,),
+)
+
 urlpatterns = [
     path('admin/', xadmin.site.urls),
+
+    url(r'^api/', include(router.urls)),
+    url(r'^api-auth/', include('rest_framework.urls', namespace='rest_framework')),
+    # 配置django-rest-framwork路由
+
+    url(r'^swagger(?P<format>\.json|\.yaml)$', schema_view.without_ui(cache_timeout=0), name='schema-json'),
+    url(r'^swagger/$', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
+    url(r'^redoc/$', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
+    # 配置drf-yasg路由
 
     url(r'^admin/guard/microservice/debug_microservice/(\d+)$', views.debug_microservice, name='debug_microservice'),
     # 运行微服务路由
@@ -39,3 +67,12 @@ urlpatterns = [
 
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 # 配置媒体文件url转发
+
+urlpatterns += [url(r'^silk/', include('silk.urls', namespace='silk'))]
+# 配置django-silk路由
+
+if settings.DEBUG:
+    import debug_toolbar
+
+    urlpatterns = [path('__debug__/', include(debug_toolbar.urls)), ] + urlpatterns
+# 配置django-debug-toolbar路由

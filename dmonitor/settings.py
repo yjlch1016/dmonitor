@@ -51,6 +51,17 @@ INSTALLED_APPS = [
     'rest_framework',
     # django-rest-framework
 
+    'import_export',
+    # django-import-export
+
+    'drf_yasg',
+    # drf-yasg
+
+    'silk',
+    # django-silk
+
+    'debug_toolbar',
+    # django-debug-toolbar
 ]
 
 MIDDLEWARE = [
@@ -62,6 +73,8 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'silk.middleware.SilkyMiddleware',
+    'debug_toolbar.middleware.DebugToolbarMiddleware',
     'django.middleware.cache.FetchFromCacheMiddleware',
 ]
 
@@ -219,7 +232,6 @@ CACHES = {
     "default": {
         "BACKEND": "django_redis.cache.RedisCache",
         "LOCATION": "redis://localhost:6379/1",
-        "TIMEOUT": 180,
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
             "CONNECTION_POOL_KWARGS": {"max_connections": 100},
@@ -231,3 +243,24 @@ CACHES = {
     }
 }
 # django-redis配置
+
+
+IMPORT_EXPORT_USE_TRANSACTIONS = True
+# 在导入数据时使用数据库事务，默认False
+
+
+REST_FRAMEWORK = {
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 10
+}
+# django-rest-framework配置
+
+
+MONITOR_PLATFORM = "http://www.monitor.com/admin/"
+# 生产环境接口监控平台地址
+
+
+INTERNAL_IPS = [
+    '127.0.0.1',
+]
+# django-debug-toolbar配置

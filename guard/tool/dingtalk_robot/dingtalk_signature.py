@@ -5,13 +5,15 @@ import time
 import urllib.parse
 
 
-def get_dingtalk_signature():
-    # 获取签名的方法
+def get_dingtalk_signature(secret):
+    """
+    获取签名的方法
+    :param secret: 参数为密钥
+    :return:
+    """
 
     timestamp = str(round(time.time() * 1000))
     # 时间戳
-    secret = "ABCDEFG"
-    # 密钥
 
     secret_enc = secret.encode('utf-8')
     string_to_sign = '{}\n{}'.format(timestamp, secret)

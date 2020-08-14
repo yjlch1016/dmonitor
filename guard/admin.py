@@ -1,19 +1,20 @@
 # Register your models here.
-
 import json
 import logging
 import re
+from datetime import datetime
 from itertools import chain
 
 import demjson
 import requests
 import xadmin
 from django.contrib.auth.models import Group, User
-from django.utils.datetime_safe import datetime
+from django.forms import model_to_dict
 from django.utils.html import format_html
 from django.utils.safestring import mark_safe
 from django_celery_beat.models import IntervalSchedule, CrontabSchedule, PeriodicTask
 from django_celery_results.models import TaskResult
+from import_export import resources
 from xadmin import views
 from xadmin.layout import Main, Fieldset
 from xadmin.models import Permission, Log
@@ -21,7 +22,8 @@ from xadmin.plugins.actions import BaseActionView
 from xadmin.plugins.batch import BatchChangeAction
 
 from guard.models import Microservice, Case, RunningResults, EnvironmentConfiguration, Step
-from guard.tool.common_encapsulation.function_assistant import function_dollar, function_rn, function_rl, function_mp
+from guard.tool.common_encapsulation.function_assistant import function_dollar, function_rn, function_rl, \
+    function_mp, function_rd
 from guard.tool.dingtalk_robot.alarm_text import http_request_exception_alarm, response_result_alarm, \
     response_time_alarm, response_code_alarm
 from guard.tool.dingtalk_robot.send_alarm_message import send_dingtalk_alarm
@@ -44,6 +46,62 @@ class CopyAction(BaseActionView):
             # 先让这条数据的id为空
             qs.save()
         return None
+
+
+class MicroserviceImport(resources.ModelResource):
+    class Meta:
+        model = Microservice
+
+        skip_unchanged = True
+        # 导入数据时，如果该条数据未修改过，则会忽略
+        report_skipped = True
+        # 在导入预览页面中显示跳过的记录
+        import_id_fields = ('id',)
+        # 对象标识的默认字段是id，您可以选择在导入时设置哪些字段用作id
+        exclude = (
+            'create_time',
+            'update_time',
+        )
+        # 黑名单
+
+
+class CaseImport(resources.ModelResource):
+    class Meta:
+        model = Case
+
+        skip_unchanged = True
+        report_skipped = True
+        import_id_fields = ('id',)
+        exclude = (
+            'create_time',
+            'update_time',
+        )
+
+
+class StepImport(resources.ModelResource):
+    class Meta:
+        model = Step
+
+        skip_unchanged = True
+        report_skipped = True
+        import_id_fields = ('id',)
+        exclude = (
+            'create_time',
+            'update_time',
+        )
+
+
+class EnvironmentConfigurationImport(resources.ModelResource):
+    class Meta:
+        model = EnvironmentConfiguration
+
+        skip_unchanged = True
+        report_skipped = True
+        import_id_fields = ('id',)
+        exclude = (
+            'create_time',
+            'update_time',
+        )
 
 
 class StepAdmin(object):
@@ -103,7 +161,7 @@ class StepAdmin(object):
     form_layout = (
         Main(
             Fieldset('步骤信息部分',
-                     'step_case', 'step_name',
+                     'step_case', 'step_name', 'step_on_off',
                      'request_mode', 'api', 'body', 'headers', 'query_string',
                      'expected_time', 'expected_code', 'expected_result',
                      'regular'),
@@ -119,6 +177,7 @@ class StepAdmin(object):
         'id',
         'step_case_foreign',
         'step_name',
+        'step_on_off',
         'running_total',
         'request_mode',
         'api',
@@ -136,15 +195,16 @@ class StepAdmin(object):
     ]
 
     ordering = ("id",)
-    search_fields = ("step_name",)
+    search_fields = ("step_name", "step_case__case_name")
     list_filter = ["create_time"]
     list_display_links = ('id', 'step_case_foreign', 'step_name')
     show_detail_fields = ['step_name']
     list_editable = ['step_name']
-    list_per_page = 10
+    list_per_page = 20
 
     batch_fields = (
         'step_name',
+        'step_on_off',
         'request_mode',
         'api',
         'body',
@@ -158,6 +218,11 @@ class StepAdmin(object):
     # 可批量修改的字段
     actions = [CopyAction, BatchChangeAction]
     # 列表页面，添加复制动作与批量修改动作
+
+    import_export_args = {
+        'import_resource_class': StepImport,
+    }
+    # 配置导入按钮
 
 
 class CaseAdmin(object):
@@ -207,16 +272,35 @@ class CaseAdmin(object):
         variable_result_dict = {}
         # 定义一个变量名与提取的结果字典
 
-        data_object = Case.objects.get(id=self, case_on_off="开").step_key.values().order_by("id")
+        data_object = Case.objects.get(id=self, case_on_off="开"). \
+            step_key.values().filter(step_on_off="开").order_by("id")
         # 反向查询用例包含的步骤信息
-        case_name = Case.objects.get(id=self, case_on_off="开").case_name
-        logger.info("用例名称为：{}".format(case_name))
         data_list = list(data_object)
         # 把QuerySet对象转换成列表
+
+        case_name = Case.objects.get(id=self, case_on_off="开").case_name
+        logger.info("用例名称为：{}".format(case_name))
+
+        service_domain = Case.objects.get(id=self, case_on_off="开"). \
+            case_microservice.microservice_environment.domain_name
+        switch_dict = model_to_dict(
+            Case.objects.get(id=self, case_on_off="开"), fields=["dingtalk_on_off", "mailbox_on_off"])
+        dingtalk_switch = switch_dict["dingtalk_on_off"]
+        logger.info("钉钉开关为：{}".format(dingtalk_switch))
+        e_mail_switch = switch_dict["mailbox_on_off"]
+        logger.info("邮件开关为：{}".format(e_mail_switch))
+
+        dingtalk_webhook = Case.objects.get(id=self, case_on_off="开"). \
+            case_microservice.microservice_environment.webhook
+        secret = Case.objects.get(id=self, case_on_off="开"). \
+            case_microservice.microservice_environment.secret
+        recipient_email = Case.objects.get(id=self, case_on_off="开"). \
+            case_microservice.microservice_environment.recipient_email
 
         for item in data_list:
             step_id = item["id"]
             step_name = item["step_name"]
+            step_on_off = item["step_on_off"]
             request_mode = item["request_mode"]
             api = item["api"]
             body = item["body"]
@@ -246,32 +330,34 @@ class CaseAdmin(object):
                 body = function_rn(body)
                 body = function_rl(body)
                 body = function_mp(body)
+                body = function_rd(body)
                 body = json.loads(body)
             if headers:
                 headers = function_rn(headers)
                 headers = function_rl(headers)
                 headers = function_mp(headers)
+                headers = function_rd(headers)
                 headers = json.loads(headers)
             if query_string:
                 query_string = function_rn(query_string)
                 query_string = function_rl(query_string)
                 query_string = function_mp(query_string)
+                query_string = function_rd(query_string)
                 query_string = json.loads(query_string)
 
             logger.info("步骤名称为：{}".format(step_name))
-            service_domain = Step.objects.get(
-                id=step_id).step_case.case_microservice.microservice_environment.domain_name
+            logger.info("请求方式为：{}".format(request_mode))
+            logger.info("步骤开关为：{}".format(step_on_off))
             url = service_domain + api
             logger.info("请求地址为：{}".format(url))
-            dingtalk_switch = Step.objects.get(id=step_id).step_case.dingtalk_on_off
-            logger.info("钉钉开关为：{}".format(dingtalk_switch))
-            e_mail_switch = Step.objects.get(id=step_id).step_case.mailbox_on_off
-            logger.info("邮件开关为：{}".format(e_mail_switch))
+            logger.info("请求头为：{}".format(json.dumps(headers, ensure_ascii=False)))
+            logger.info("请求参数为：{}".format(json.dumps(query_string, ensure_ascii=False)))
+            logger.info("请求体为：{}".format(json.dumps(body, ensure_ascii=False)))
 
             try:
                 response = requests.request(
                     request_mode, url, data=json.dumps(body),
-                    headers=headers, params=query_string, timeout=(15, 20)
+                    headers=headers, params=query_string, timeout=(25, 30)
                 )
                 logger.info("HTTP请求成功")
             except Exception as e:
@@ -283,7 +369,7 @@ class CaseAdmin(object):
                         json.dumps(headers, ensure_ascii=False),
                         json.dumps(query_string, ensure_ascii=False),
                         str(e))
-                    send_dingtalk_alarm(alarm_message)
+                    send_dingtalk_alarm(alarm_message, dingtalk_webhook, secret)
                     logger.info("钉钉报警发送成功")
                 if e_mail_switch == "开":
                     alarm_message = http_request_exception_alarm(
@@ -292,7 +378,7 @@ class CaseAdmin(object):
                         json.dumps(headers, ensure_ascii=False),
                         json.dumps(query_string, ensure_ascii=False),
                         str(e))
-                    send_mailbox(alarm_message)
+                    send_mailbox(alarm_message, recipient_email)
                     logger.info("邮件发送成功")
                 raise e
 
@@ -309,21 +395,33 @@ class CaseAdmin(object):
                 logger.error("获取实际的响应代码发生错误：{}".format(e))
                 raise e
             try:
+                actual_headers = response.headers
+                logger.info("实际的响应头为：{}".format(actual_headers))
+            except Exception as e:
+                logger.error("获取实际的响应头发生错误：{}".format(e))
+                raise e
+            try:
                 actual_result_text = response.text
-                logger.info("实际的响应结果为：{}".format(actual_result_text[0:300]))
+                logger.info("实际的响应结果为：{}".format(actual_result_text[0:400]))
             except Exception as e:
                 logger.error("获取实际的响应结果发生错误：{}".format(e))
                 raise e
 
-            if regular:
-                regular = demjson.decode(regular)
-                extract_list = []
-                for i in regular["expression"]:
-                    regular_result = re.findall(i, actual_result_text)[0]
-                    extract_list.append(regular_result)
-                variable_result_dict_temporary = dict(zip(regular["variable"], extract_list))
-                for key, value in variable_result_dict_temporary.items():
-                    variable_result_dict[key] = value
+            try:
+                if regular:
+                    regular = demjson.decode(regular)
+                    extract_list = []
+                    for i in regular["expression"]:
+                        re_list = re.findall(i, actual_result_text)
+                        if len(re_list) >= 1:
+                            regular_result = re_list[0]
+                            extract_list.append(regular_result)
+                    variable_result_dict_temporary = dict(zip(regular["variable"], extract_list))
+                    for key, value in variable_result_dict_temporary.items():
+                        variable_result_dict[key] = value
+            except Exception as e:
+                logger.error("正则匹配发生错误：{}".format(e))
+                raise e
 
             if variable_result_dict:
                 for key in list(variable_result_dict.keys()):
@@ -354,7 +452,7 @@ class CaseAdmin(object):
                                     json.dumps(headers, ensure_ascii=False),
                                     json.dumps(query_string, ensure_ascii=False),
                                     actual_time, expected_time)
-                                send_dingtalk_alarm(alarm_message)
+                                send_dingtalk_alarm(alarm_message, dingtalk_webhook, secret)
                                 logger.info("钉钉报警发送成功")
                             if e_mail_switch == "开":
                                 alarm_message = response_time_alarm(
@@ -363,7 +461,7 @@ class CaseAdmin(object):
                                     json.dumps(headers, ensure_ascii=False),
                                     json.dumps(query_string, ensure_ascii=False),
                                     actual_time, expected_time)
-                                send_mailbox(alarm_message)
+                                send_mailbox(alarm_message, recipient_email)
                                 logger.info("邮件发送成功")
                 else:
                     pass_status = "否"
@@ -376,7 +474,7 @@ class CaseAdmin(object):
                             json.dumps(headers, ensure_ascii=False),
                             json.dumps(query_string, ensure_ascii=False),
                         )
-                        send_dingtalk_alarm(alarm_message)
+                        send_dingtalk_alarm(alarm_message, dingtalk_webhook, secret)
                         logger.info("钉钉报警发送成功")
                     if e_mail_switch == "开":
                         alarm_message = response_result_alarm(
@@ -385,7 +483,7 @@ class CaseAdmin(object):
                             json.dumps(headers, ensure_ascii=False),
                             json.dumps(query_string, ensure_ascii=False),
                         )
-                        send_dingtalk_alarm(alarm_message)
+                        send_mailbox(alarm_message, recipient_email)
                         logger.info("邮件发送成功")
             else:
                 pass_status = "否"
@@ -398,7 +496,7 @@ class CaseAdmin(object):
                         json.dumps(headers, ensure_ascii=False),
                         json.dumps(query_string, ensure_ascii=False),
                         expected_code, actual_code)
-                    send_dingtalk_alarm(alarm_message)
+                    send_dingtalk_alarm(alarm_message, dingtalk_webhook, secret)
                     logger.info("钉钉报警发送成功")
                 if e_mail_switch == "开":
                     alarm_message = response_code_alarm(
@@ -407,7 +505,7 @@ class CaseAdmin(object):
                         json.dumps(headers, ensure_ascii=False),
                         json.dumps(query_string, ensure_ascii=False),
                         expected_code, actual_code)
-                    send_dingtalk_alarm(alarm_message)
+                    send_mailbox(alarm_message, recipient_email)
                     logger.info("邮件发送成功")
 
             RunningResults.objects.create(
@@ -451,7 +549,7 @@ class CaseAdmin(object):
         Main(
             Fieldset('用例信息部分',
                      'case_microservice', 'case_name',
-                     'case_on_off', 'dingtalk_on_off'),
+                     'case_on_off', 'dingtalk_on_off', 'mailbox_on_off'),
         ),
         # Side(
         #     Fieldset('时间部分',
@@ -466,6 +564,7 @@ class CaseAdmin(object):
         'case_name',
         'case_on_off',
         'dingtalk_on_off',
+        'mailbox_on_off',
         'step_total',
         'chart_button',
         'create_time',
@@ -476,25 +575,42 @@ class CaseAdmin(object):
     ]
 
     ordering = ("id",)
-    search_fields = ("case_name",)
+    search_fields = ("case_name", "case_microservice__microservice_name")
     list_filter = ["create_time"]
     list_display_links = ('id', 'microservice_name', 'case_name')
     show_detail_fields = ['case_name']
     list_editable = ['case_name']
-    list_per_page = 10
+    list_per_page = 20
 
     batch_fields = (
         'case_name',
+        'case_on_off',
+        'dingtalk_on_off',
+        'mailbox_on_off',
     )
     # 可批量修改的字段
     actions = [CopyAction, BatchChangeAction]
     # 列表页面，添加复制动作与批量修改动作
+
+    import_export_args = {
+        'import_resource_class': CaseImport,
+    }
+    # 配置导入按钮
 
 
 class MicroserviceAdmin(object):
     inlines = [CaseAdmin]
 
     # 使用内嵌显示
+
+    def swagger(self, obj):
+        # swagger地址
+        button_html = '<a style="color: green" href="%s" target="_blank">%s</a>' % (
+            obj.swagger_address, obj.swagger_address)
+        return format_html(button_html)
+
+    swagger.short_description = '<span style="color: green">swagger地址</span>'
+    swagger.allow_tags = True
 
     def case_total(self, obj):
         # 利用外键反向统计用例总数
@@ -530,16 +646,35 @@ class MicroserviceAdmin(object):
         data_tuple = tuple(chain.from_iterable(data_tuple))
         # 把多维元祖转换成一维元祖
 
+        service_domain = Microservice.objects.get(id=self, microservice_on_off="开") \
+            .microservice_environment.domain_name
+        dingtalk_webhook = Microservice.objects.get(id=self, case_on_off="开") \
+            .microservice_environment.webhook
+        secret = Microservice.objects.get(id=self, case_on_off="开") \
+            .microservice_environment.secret
+        recipient_email = Microservice.objects.get(id=self, case_on_off="开") \
+            .microservice_environment.recipient_email
+
         for case_i in data_tuple:
-            case_object = Case.objects.get(id=case_i, case_on_off="开").step_key.values().order_by("id")
+            case_object = Case.objects.get(id=case_i, case_on_off="开").step_key.values().filter(
+                step_on_off="开").order_by("id")
             # 反向查询用例包含的步骤信息
-            case_name = Case.objects.get(id=case_i).case_name
+            case_name = Case.objects.get(id=case_i, case_on_off="开").case_name
             logger.info("用例名称为：{}".format(case_name))
             case_list = list(case_object)
             # 把QuerySet对象转换成列表
+
+            switch_dict = model_to_dict(
+                Case.objects.get(id=case_i, case_on_off="开"), fields=["dingtalk_on_off", "mailbox_on_off"])
+            dingtalk_switch = switch_dict["dingtalk_on_off"]
+            logger.info("钉钉开关为：{}".format(dingtalk_switch))
+            e_mail_switch = switch_dict["mailbox_on_off"]
+            logger.info("邮件开关为：{}".format(e_mail_switch))
+
             for step_i in case_list:
                 step_id = step_i["id"]
                 step_name = step_i["step_name"]
+                step_on_off = step_i["step_on_off"]
                 request_mode = step_i["request_mode"]
                 api = step_i["api"]
                 body = step_i["body"]
@@ -569,32 +704,34 @@ class MicroserviceAdmin(object):
                     body = function_rn(body)
                     body = function_rl(body)
                     body = function_mp(body)
+                    body = function_rd(body)
                     body = json.loads(body)
                 if headers:
                     headers = function_rn(headers)
                     headers = function_rl(headers)
                     headers = function_mp(headers)
+                    headers = function_rd(headers)
                     headers = json.loads(headers)
                 if query_string:
                     query_string = function_rn(query_string)
                     query_string = function_rl(query_string)
                     query_string = function_mp(query_string)
+                    query_string = function_rd(query_string)
                     query_string = json.loads(query_string)
 
                 logger.info("步骤名称为：{}".format(step_name))
-                service_domain = Step.objects.get(
-                    id=step_id).step_case.case_microservice.microservice_environment.domain_name
+                logger.info("请求方式为：{}".format(request_mode))
+                logger.info("步骤开关为：{}".format(step_on_off))
                 url = service_domain + api
                 logger.info("请求地址为：{}".format(url))
-                dingtalk_switch = Step.objects.get(id=step_id).step_case.dingtalk_on_off
-                logger.info("钉钉开关为：{}".format(dingtalk_switch))
-                e_mail_switch = Step.objects.get(id=step_id).step_case.mailbox_on_off
-                logger.info("邮件开关为：{}".format(e_mail_switch))
+                logger.info("请求头为：{}".format(json.dumps(headers, ensure_ascii=False)))
+                logger.info("请求参数为：{}".format(json.dumps(query_string, ensure_ascii=False)))
+                logger.info("请求体为：{}".format(json.dumps(body, ensure_ascii=False)))
 
                 try:
                     response = requests.request(
                         request_mode, url, data=json.dumps(body),
-                        headers=headers, params=query_string, timeout=(15, 20)
+                        headers=headers, params=query_string, timeout=(25, 30)
                     )
                     logger.info("HTTP请求成功")
                 except Exception as e:
@@ -606,7 +743,7 @@ class MicroserviceAdmin(object):
                             json.dumps(headers, ensure_ascii=False),
                             json.dumps(query_string, ensure_ascii=False),
                             str(e))
-                        send_dingtalk_alarm(alarm_message)
+                        send_dingtalk_alarm(alarm_message, dingtalk_webhook, secret)
                         logger.info("钉钉报警发送成功")
                     if e_mail_switch == "开":
                         alarm_message = http_request_exception_alarm(
@@ -615,7 +752,7 @@ class MicroserviceAdmin(object):
                             json.dumps(headers, ensure_ascii=False),
                             json.dumps(query_string, ensure_ascii=False),
                             str(e))
-                        send_mailbox(alarm_message)
+                        send_mailbox(alarm_message, recipient_email)
                         logger.info("邮件发送成功")
                     raise e
 
@@ -632,21 +769,33 @@ class MicroserviceAdmin(object):
                     logger.error("获取实际的响应代码发生错误：{}".format(e))
                     raise e
                 try:
+                    actual_headers = response.headers
+                    logger.info("实际的响应头为：{}".format(actual_headers))
+                except Exception as e:
+                    logger.error("获取实际的响应头发生错误：{}".format(e))
+                    raise e
+                try:
                     actual_result_text = response.text
-                    logger.info("实际的响应结果为：{}".format(actual_result_text[0:300]))
+                    logger.info("实际的响应结果为：{}".format(actual_result_text[0:400]))
                 except Exception as e:
                     logger.error("获取实际的响应结果发生错误：{}".format(e))
                     raise e
 
-                if regular:
-                    regular = demjson.decode(regular)
-                    extract_list = []
-                    for i in regular["expression"]:
-                        regular_result = re.findall(i, actual_result_text)[0]
-                        extract_list.append(regular_result)
-                    variable_result_dict_temporary = dict(zip(regular["variable"], extract_list))
-                    for key, value in variable_result_dict_temporary.items():
-                        variable_result_dict[key] = value
+                try:
+                    if regular:
+                        regular = demjson.decode(regular)
+                        extract_list = []
+                        for i in regular["expression"]:
+                            re_list = re.findall(i, actual_result_text)
+                            if len(re_list) >= 1:
+                                regular_result = re_list[0]
+                                extract_list.append(regular_result)
+                        variable_result_dict_temporary = dict(zip(regular["variable"], extract_list))
+                        for key, value in variable_result_dict_temporary.items():
+                            variable_result_dict[key] = value
+                except Exception as e:
+                    logger.error("正则匹配发生错误：{}".format(e))
+                    raise e
 
                 if variable_result_dict:
                     for key in list(variable_result_dict.keys()):
@@ -668,7 +817,7 @@ class MicroserviceAdmin(object):
                                 pass_status = "是"
                             else:
                                 pass_status = "否"
-                                fail_reason = "实际的响应时间大于预期的响应时间"
+                                fail_reason = "实际的响应时间大于预期的响应时间\n"
                                 logger.error("实际的响应时间大于预期的响应时间")
                                 if dingtalk_switch == "开":
                                     alarm_message = response_time_alarm(
@@ -677,7 +826,7 @@ class MicroserviceAdmin(object):
                                         json.dumps(headers, ensure_ascii=False),
                                         json.dumps(query_string, ensure_ascii=False),
                                         actual_time, expected_time)
-                                    send_dingtalk_alarm(alarm_message)
+                                    send_dingtalk_alarm(alarm_message, dingtalk_webhook, secret)
                                     logger.info("钉钉报警发送成功")
                                 if e_mail_switch == "开":
                                     alarm_message = response_time_alarm(
@@ -686,7 +835,7 @@ class MicroserviceAdmin(object):
                                         json.dumps(headers, ensure_ascii=False),
                                         json.dumps(query_string, ensure_ascii=False),
                                         actual_time, expected_time)
-                                    send_mailbox(alarm_message)
+                                    send_mailbox(alarm_message, recipient_email)
                                     logger.info("邮件发送成功")
                     else:
                         pass_status = "否"
@@ -699,7 +848,7 @@ class MicroserviceAdmin(object):
                                 json.dumps(headers, ensure_ascii=False),
                                 json.dumps(query_string, ensure_ascii=False),
                             )
-                            send_dingtalk_alarm(alarm_message)
+                            send_dingtalk_alarm(alarm_message, dingtalk_webhook, secret)
                             logger.info("钉钉报警发送成功")
                         if e_mail_switch == "开":
                             alarm_message = response_result_alarm(
@@ -708,7 +857,7 @@ class MicroserviceAdmin(object):
                                 json.dumps(headers, ensure_ascii=False),
                                 json.dumps(query_string, ensure_ascii=False),
                             )
-                            send_dingtalk_alarm(alarm_message)
+                            send_mailbox(alarm_message, recipient_email)
                             logger.info("邮件发送成功")
                 else:
                     pass_status = "否"
@@ -721,7 +870,7 @@ class MicroserviceAdmin(object):
                             json.dumps(headers, ensure_ascii=False),
                             json.dumps(query_string, ensure_ascii=False),
                             expected_code, actual_code)
-                        send_dingtalk_alarm(alarm_message)
+                        send_dingtalk_alarm(alarm_message, dingtalk_webhook, secret)
                         logger.info("钉钉报警发送成功")
                     if e_mail_switch == "开":
                         alarm_message = response_code_alarm(
@@ -730,7 +879,7 @@ class MicroserviceAdmin(object):
                             json.dumps(headers, ensure_ascii=False),
                             json.dumps(query_string, ensure_ascii=False),
                             expected_code, actual_code)
-                        send_dingtalk_alarm(alarm_message)
+                        send_mailbox(alarm_message, recipient_email)
                         logger.info("邮件发送成功")
 
                 RunningResults.objects.create(
@@ -764,7 +913,8 @@ class MicroserviceAdmin(object):
     form_layout = (
         Main(
             Fieldset('微服务信息部分',
-                     'microservice_name', 'microservice_on_off', 'dingding_on_off', 'microservice_introduce'),
+                     'microservice_name', 'swagger_address', 'microservice_on_off', 'dingding_on_off', 'e_mail_on_off',
+                     'microservice_introduce'),
         ),
         # Side(
         #     Fieldset('时间部分',
@@ -775,8 +925,10 @@ class MicroserviceAdmin(object):
     list_display = [
         'id',
         'microservice_name',
+        'swagger',
         'microservice_on_off',
         'dingding_on_off',
+        'e_mail_on_off',
         'case_total',
         'microservice_introduce',
         'create_time',
@@ -791,15 +943,24 @@ class MicroserviceAdmin(object):
     show_detail_fields = ['microservice_name']
     list_display_links = ('id', 'microservice_name')
     list_editable = ['microservice_name']
-    list_per_page = 10
+    list_per_page = 20
 
     batch_fields = (
         'microservice_name',
+        'swagger_address',
+        'microservice_on_off',
+        'dingding_on_off',
+        'e_mail_on_off',
         'microservice_introduce',
     )
     # 可批量修改的字段
     actions = [CopyAction, BatchChangeAction]
     # 列表页面，添加复制动作与批量修改动作
+
+    import_export_args = {
+        'import_resource_class': MicroserviceImport,
+    }
+    # 配置导入按钮
 
 
 class RunningResultsAdmin(object):
@@ -839,9 +1000,8 @@ class RunningResultsAdmin(object):
     form_layout = (
         Main(
             Fieldset('运行结果部分',
-                     'case_foreign',
-                     'running_results_step', 'pass_status', 'fail_reason',
-                     'run_time', 'actual_time', 'actual_code', 'actual_result'
+                     'case_foreign', 'running_results_step', 'pass_status', 'fail_reason',
+                     'run_time', 'actual_time', 'actual_code', 'actual_result',
                      ),
         ),
         # Side(
@@ -863,16 +1023,17 @@ class RunningResultsAdmin(object):
         'delete_button',
     ]
     ordering = ("-id",)
-    search_fields = ['pass_status']
+    search_fields = ['pass_status', 'running_results_step__step_name', 'running_results_step__step_case__case_name']
+    list_filter = ["run_time"]
     list_display_links = None
     # 禁用编辑链接
     show_detail_fields = ['pass_status']
     readonly_fields = [
         'id', 'running_results_step', 'pass_status', 'fail_reason',
-        'run_time', 'actual_time', 'actual_code', 'actual_result_ellipsis'
+        'run_time', 'actual_time', 'actual_code', 'actual_result'
     ]
     # 设置只读字段
-    list_per_page = 10
+    list_per_page = 20
 
 
 class EnvironmentConfigurationAdmin(object):
@@ -906,7 +1067,8 @@ class EnvironmentConfigurationAdmin(object):
     form_layout = (
         Main(
             Fieldset('环境配置信息部分',
-                     'environment_configuration_microservice', 'domain_name'),
+                     'environment_configuration_microservice', 'domain_name',
+                     'webhook', 'secret', 'recipient_email'),
         ),
         # Side(
         #     Fieldset('时间部分',
@@ -918,25 +1080,33 @@ class EnvironmentConfigurationAdmin(object):
         'id',
         'microservice_name_env',
         'domain_name',
+        'webhook',
+        'secret',
+        'recipient_email',
         'create_time',
         'update_time',
         'update_button',
         'delete_button',
     ]
     ordering = ("id",)
-    search_fields = ("domain_name",)
+    search_fields = ("domain_name", "environment_configuration_microservice__microservice_name")
     list_filter = ["create_time"]
     show_detail_fields = ['domain_name']
     list_display_links = ('id', 'microservice_name_env', 'domain_name')
     list_editable = ['domain_name']
-    list_per_page = 10
+    list_per_page = 20
 
     batch_fields = (
-        'domain_name',
+        'domain_name', 'webhook', 'secret', 'recipient_email',
     )
     # 可批量修改的字段
     actions = [CopyAction, BatchChangeAction]
     # 列表页面，添加复制动作与批量修改动作
+
+    import_export_args = {
+        'import_resource_class': EnvironmentConfigurationImport,
+    }
+    # 配置导入按钮
 
 
 class IntervalScheduleAdmin(object):
@@ -1018,7 +1188,7 @@ class GlobalSetting(object):
     # 配置全局搜索选项
     # 默认搜索组、用户、日志记录
 
-    site_title = "轻量级生产环境接口监控平台"
+    site_title = "生产环境接口监控平台"
     # 标题
     site_footer = "测试部门"
     # 页脚
@@ -1035,9 +1205,14 @@ class GlobalSetting(object):
                 # 权限
                 'menus': (
                     {
-                        'title': 'grafana图表',
-                        'icon': 'fa fa-star',
-                        'url': "http://www.monitor.com/grafana/"
+                        'title': 'supervisor',
+                        'icon': 'fa fa-trophy',
+                        'url': "http://www.monitor.com/supervisor/"
+                    },
+                    {
+                        'title': 'silk',
+                        'icon': 'fa fa-twitter',
+                        'url': "http://www.monitor.com/silk/"
                     },
                 )
             },
@@ -1103,7 +1278,7 @@ class GlobalSetting(object):
             },
             {
                 'title': '后台管理',
-                'icon': 'fa fa-wechat',
+                'icon': 'fa fa-user',
                 'perm': self.get_model_perm(Group, 'change'),
                 'menus': (
                     {
