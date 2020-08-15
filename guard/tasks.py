@@ -169,6 +169,12 @@ def run_all():
                 logger.error("获取实际的响应代码发生错误：{}".format(e))
                 raise e
             try:
+                actual_headers = response.headers
+                logger.info("实际的响应头为：{}".format(actual_headers))
+            except Exception as e:
+                logger.error("获取实际的响应头发生错误：{}".format(e))
+                raise e
+            try:
                 actual_result_text = response.text
                 logger.info("实际的响应结果为：{}".format(actual_result_text[0:400]))
             except Exception as e:
