@@ -2,7 +2,7 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect
 
 # Create your views here.
-from rest_framework import viewsets
+from rest_framework import viewsets, permissions
 
 from guard.admin import MicroserviceAdmin, CaseAdmin
 from guard.models import Microservice, Case, Step, EnvironmentConfiguration
@@ -42,6 +42,7 @@ class MicroserviceViewSet(viewsets.ModelViewSet):
     """
     queryset = Microservice.objects.all().order_by('id')
     serializer_class = MicroserviceSerializer
+    permission_classes = [permissions.IsAuthenticated]
 
 
 class CaseViewSet(viewsets.ModelViewSet):
@@ -50,6 +51,7 @@ class CaseViewSet(viewsets.ModelViewSet):
     """
     queryset = Case.objects.all().order_by('id')
     serializer_class = CaseSerializer
+    permission_classes = [permissions.IsAuthenticated]
 
 
 class StepViewSet(viewsets.ModelViewSet):
@@ -58,6 +60,7 @@ class StepViewSet(viewsets.ModelViewSet):
     """
     queryset = Step.objects.all().order_by('id')
     serializer_class = StepSerializer
+    permission_classes = [permissions.IsAuthenticated]
 
 
 class EnvironmentConfigurationViewSet(viewsets.ModelViewSet):
@@ -66,3 +69,4 @@ class EnvironmentConfigurationViewSet(viewsets.ModelViewSet):
     """
     queryset = EnvironmentConfiguration.objects.all().order_by('id')
     serializer_class = EnvironmentConfigurationSerializer
+    permission_classes = [permissions.IsAuthenticated]
