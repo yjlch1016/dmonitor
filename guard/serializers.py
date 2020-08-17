@@ -12,11 +12,16 @@ class MicroserviceSerializer(serializers.HyperlinkedModelSerializer):
 
 
 class CaseSerializer(serializers.HyperlinkedModelSerializer):
+    microservice_name = serializers.ReadOnlyField(source='case_microservice.microservice_name')
+
+    # 外键序列化
+
     class Meta:
         model = Case
         fields = (
             'id',
-            'case_microservice_id',
+            'case_microservice',
+            'microservice_name',
             'case_name',
             'case_on_off',
             'dingtalk_on_off',
@@ -27,11 +32,16 @@ class CaseSerializer(serializers.HyperlinkedModelSerializer):
 
 
 class StepSerializer(serializers.HyperlinkedModelSerializer):
+    case_name = serializers.ReadOnlyField(source='step_case.case_name')
+
+    # 外键序列化
+
     class Meta:
         model = Step
         fields = (
             'id',
-            'step_case_id',
+            'step_case',
+            'case_name',
             'step_name',
             'step_on_off',
             'request_mode',
@@ -49,11 +59,16 @@ class StepSerializer(serializers.HyperlinkedModelSerializer):
 
 
 class EnvironmentConfigurationSerializer(serializers.HyperlinkedModelSerializer):
+    microservice_name = serializers.ReadOnlyField(source='environment_configuration_microservice.microservice_name')
+
+    # 外键序列化
+
     class Meta:
         model = EnvironmentConfiguration
         fields = (
             'id',
-            'environment_configuration_microservice_id',
+            'environment_configuration_microservice',
+            'microservice_name',
             'domain_name',
             'webhook',
             'secret',
