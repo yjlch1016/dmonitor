@@ -1,4 +1,4 @@
-djangorestframework==3.11.0
+djangorestframework==3.11.2
 drf-yasg==1.17.1
 django-redis==4.12.1
 django-import-export==2.2.0
