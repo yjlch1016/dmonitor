@@ -8,6 +8,6 @@ requests==2.23.0
 demjson==2.2.4
 celery==4.3.0
 django-celery-beat==1.5.0
-django-celery-results==1.1.2
+django-celery-results==2.4.0
 redis==3.2.1
 pyecharts==1.8.1
